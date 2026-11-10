@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Postura al Día</title>
-
+ 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
 <style>
 /* Layout: una pregunta por pantalla; barra de progreso arriba, contenido al centro, botón grande fijo abajo con hoja de retroalimentación */
@@ -42,7 +42,7 @@ h1,h2{font-family:var(--display);font-weight:800;margin:0;line-height:1.15;text-
 h1{font-size:2rem;color:var(--green)}
 h2{font-size:1.55rem}
 p{margin:0}
-.lead{color:var(--muted)}
+.lead{color:var(--muted);font-size:.9rem;line-height:1.4}
 .speech{display:flex;gap:12px;align-items:flex-end}
 .speech svg{flex:0 0 auto}
 .bubble{position:relative;background:var(--surface);border:2px solid var(--line);border-radius:16px;padding:12px 14px;font-size:1rem}
@@ -116,9 +116,16 @@ p{margin:0}
 .cta b{font-family:var(--display);font-size:1.2rem}
 .cta p{font-size:.95rem;color:var(--muted)}
 .privacy{font-size:.8rem;color:var(--muted);font-weight:400}
+.consent{display:flex;gap:9px;align-items:flex-start;font-size:.9rem;color:var(--ink);line-height:1.4}
+.consent input{margin-top:3px;flex:0 0 auto;width:18px;height:18px}
+.consent a{color:var(--green);font-weight:700}
+.cf-turnstile{margin:2px 0}
+.policy{display:flex;flex-direction:column;gap:4px}
+.policy h3{font-family:var(--display);font-size:1.05rem;margin:12px 0 2px}
+.policy p{font-size:.95rem}
 .done-ico{font-size:3rem;text-align:center}
 </style>
-
+ 
 </head>
 <body>
 <div class="app">
@@ -135,7 +142,7 @@ p{margin:0}
     <button class="btn" id="go" type="button">Empezar</button>
   </div>
 </div>
-
+ 
 <script>
 const LINEAS=[
   {id:"hyline-brown",nombre:"Hy-Line Brown",em:"🟤",sub:"Huevo marrón",delta:0,alim:110},
@@ -154,23 +161,30 @@ function estandar(sem){
 const fmt=(n,d=1)=>Number(n).toLocaleString("es-PE",{minimumFractionDigits:d,maximumFractionDigits:d});
 const int=n=>Math.round(n).toLocaleString("es-PE");
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbxkM1pxZgJYo8WiuUbx-Y7ZrapPFT3XudrRq57A7-DZoobECC5VmbI01wlxIP61r0y4/exec";
+// --- Seguridad del envio ---
+const FORM_TOKEN="clarita2026";        // debe coincidir con SHARED_TOKEN del Apps Script
+const TURNSTILE_SITEKEY="";             // pega tu Site Key de Cloudflare Turnstile para activar el CAPTCHA (vacio = desactivado)
+let cfToken="";
+window.onTurnstile=t=>{cfToken=t;if(window._recheck)window._recheck();};
+window.onTurnstileExpire=()=>{cfToken="";if(window._recheck)window._recheck();};
+if(TURNSTILE_SITEKEY){const s=document.createElement("script");s.src="https://challenges.cloudflare.com/turnstile/v0/api.js";s.async=true;s.defer=true;document.head.appendChild(s);}
 let lead={};
 const KEY="postura-al-dia-quiz-v1";
 let A={};try{A=JSON.parse(localStorage.getItem(KEY))||{}}catch(e){}
 if(!A.aves){A={linea:"hyline-brown",aves:1000,edad:32,huevos:870,muertes:3,alimento:105,temp:"calor",luz:"16",agua:"si",sintomas:["ninguno"],precio:0.4,_ejemplo:true}}
 const save=()=>{try{const{_ejemplo,...r}=A;localStorage.setItem(KEY,JSON.stringify(r))}catch(e){}};
-
+ 
 function hen(size=72){return `<svg width="${size}" height="${size}" viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="74" rx="22" ry="4" fill="var(--line)"/><path d="M18 52c0-17 10-30 24-30 9 0 15 6 15 14 6-2 12 1 12 7 0 15-13 26-28 26S18 63 18 52z" fill="var(--yolk)"/><path d="M36 22c-2-6 2-10 5-8 1-5 7-5 7 0 4-2 7 3 4 7" fill="#d64a3a"/><circle cx="48" cy="33" r="3.2" fill="var(--ink)"/><circle cx="49" cy="32" r="1" fill="#fff"/><path d="M56 36l9 3-9 3z" fill="#f08c1a"/><path d="M53 43c2 3 2 6 0 8-2-2-2-5 0-8z" fill="#d64a3a"/><path d="M26 50c5 6 14 7 20 2" stroke="var(--yolk-dark)" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M34 70v6M44 70v6" stroke="#f08c1a" stroke-width="3" stroke-linecap="round"/></svg>`}
 const say=t=>`<div class="speech">${hen()}<div class="bubble">${t}</div></div>`;
-
+ 
 /* Preguntas */
 const STEPS=[
  {id:"linea",type:"choice",q:"¿Qué línea de gallina tienes?",hint:"Cada línea genética tiene su propia tabla de producción.",
   opts:LINEAS.map(l=>({v:l.id,t:l.nombre,s:l.sub,em:l.em})),
   fb:()=>["ok","¡Bien!",A.linea==="nose"?"No pasa nada. Pregunta a tu proveedor de pollitas el nombre de la línea: con ella el diagnóstico es más exacto.":`${linea().nombre} llega a su punto más alto (pico de postura) cerca de la semana 25, con alrededor de ${fmt(estandar(25),0)}% de postura.`]},
- {id:"aves",type:"num",q:"¿Cuántas gallinas vivas tienes en el lote?",unit:"gallinas",min:1,step:10,hint:"Cuenta solo las que están en postura.",
+ {id:"aves",type:"num",q:"¿Cuántas gallinas vivas tienes por lote?",unit:"gallinas",min:1,step:10,hint:"Cuenta solo las que están en postura.",
   fb:()=>["ok","Anotado",`Con ${int(A.aves)} gallinas, cada punto de % de postura equivale a ${int(A.aves/100)} huevos al día.`]},
- {id:"edad",type:"num",q:"¿Cuántas semanas de edad tienen?",unit:"semanas desde que nacieron",min:1,max:110,step:1,hint:"Si las compraste de 16 semanas hace 10 semanas, hoy tienen 26.",
+ {id:"edad",type:"num",q:"¿Cuántas semanas de edad tienen?",unit:"semanas desde que nacieron",min:1,max:110,step:1,hint:"Ejemplo: Si las compraste de 16 semanas hace 10 semanas, hoy tienen 26.",
   fb:()=>{const s=estandar(A.edad);if(A.edad<18)return["warn","Aún son jóvenes","Antes de la semana 18 normalmente no ponen. La postura empieza entre las semanas 18 y 20."];return["ok","¿Sabías que?",`A la semana ${A.edad}, la tabla dice que de cada 100 gallinas, ${fmt(s,0)} deberían poner un huevo al día. Con tus aves son unos ${int(s/100*A.aves)} huevos.`]}},
  {id:"huevos",type:"num",q:"¿Cuántos huevos recogiste hoy?",unit:"huevos (incluye rotos y sucios)",min:0,step:10,hint:"Si recoges varias veces al día, suma todo.",
   fb:()=>{const r=real(),s=estandar(A.edad),d=r-s;if(s===0)return["ok","Anotado",`Tu postura hoy es ${fmt(r)}%.`];const t=`Tu postura es ${fmt(r)}%: de cada 100 gallinas, ${fmt(r,0)} pusieron. La tabla espera ${fmt(s)}%.`;return d>=-2?["ok","¡Excelente!",t]:d>=-6?["warn","Un poco por debajo",t+" Sigamos para encontrar la causa."]:["bad","Muy por debajo",t+" Sigamos para encontrar la causa."]}},
@@ -178,15 +192,15 @@ const STEPS=[
   fb:()=>{const p=A.muertes/A.aves*100;const t=`Eso es ${fmt(p,2)}% del lote en una semana. Lo normal es menos de 0.1% (1 de cada 1000).`;return p<=0.1?["ok","¡Bien!",t]:p<=0.5?["warn","Atención",t]:["bad","Mortalidad alta",t+" Puede haber una enfermedad."]}},
  {id:"alimento",type:"num",q:"¿Cuántos kilos de alimento das al día?",unit:"kg por día para todo el lote",min:0,step:5,optional:true,suffix:"kg",hint:"Si no sabes, puedes saltar esta pregunta.",
   fb:()=>{if(A.alimento==null)return["warn","Pregunta saltada","Pesar el alimento ayuda mucho: una gallina en postura come unos 110 g al día."];const g=A.alimento*1000/A.aves,o=linea().alim;const t=`Cada gallina come unos ${int(g)} g al día. Su línea necesita cerca de ${o} g.`;return g>=o*0.92?["ok","¡Bien alimentadas!",t]:["bad","Comen poco",t+" Sin alimento suficiente no hay huevos."]}},
- {id:"temp",type:"choice",q:"¿Cómo está el calor en el galpón a mediodía?",
+ {id:"temp",type:"choice",q:"¿Cuál es la sensación de calor en el galpón a mediodía?",
   opts:[{v:"fresco",t:"Fresco",s:"Menos de 28 °C",em:"🌤️"},{v:"calor",t:"Caluroso",s:"Entre 28 y 32 °C",em:"☀️"},{v:"mucho",t:"Muy caluroso",s:"Más de 32 °C, las aves jadean con el pico abierto",em:"🔥"}],
   fb:()=>A.temp==="fresco"?["ok","¡Bien!","Entre 18 y 27 °C las gallinas comen y ponen mejor."]:A.temp==="calor"?["warn","¿Sabías que?","Sobre 28 °C las gallinas comen menos y la postura y el tamaño del huevo bajan."]:["bad","Estrés por calor","Con más de 32 °C las aves jadean, comen poco y ponen menos. Es una causa muy común en la selva."]},
  {id:"luz",type:"choice",q:"¿Cuántas horas de luz reciben al día?",hint:"Suma la luz del sol y la de focos.",
-  opts:[{v:"12",t:"Solo luz del día",s:"Unas 12 horas",em:"🌅"},{v:"14",t:"Un poco de foco",s:"Entre 13 y 15 horas",em:"💡"},{v:"16",t:"16 horas o más",s:"Prendo focos en la madrugada o noche",em:"✨"}],
+  opts:[{v:"12",t:"Solo iluminación natural",s:"Luz del día, unas 12 horas",em:"🌅"},{v:"14",t:"Híbrido",s:"Luz del día y focos en la madrugada o noche",em:"💡"},{v:"16",t:"+16 horas de exposición",s:"Luz y focos, 16 horas o más",em:"✨"}],
   fb:()=>A.luz==="16"?["ok","¡Muy bien!","La luz estimula a la gallina a poner. En postura se recomiendan 16 horas diarias."]:["warn","¿Sabías que?","La luz le avisa a la gallina que es momento de poner. Con menos de 16 horas, la postura baja."]},
- {id:"agua",type:"choice",q:"¿Cómo estuvo el agua esta semana?",
-  opts:[{v:"si",t:"Limpia y siempre disponible",em:"💧"},{v:"no",t:"Faltó o estaba sucia algún día",em:"🚱"}],
-  fb:()=>A.agua==="si"?["ok","¡Perfecto!","Una gallina toma casi el doble de agua que de alimento."]:["bad","Muy importante","Un solo día sin agua puede bajar la postura durante varios días."]},
+ {id:"agua",type:"choice",q:"¿Cuál fue la calidad del agua esta semana?",
+  opts:[{v:"si",t:"Limpia y disponible",em:"💧"},{v:"falto",t:"Faltó o no estuvo disponible",em:"🚱"},{v:"sucia",t:"Estuvo sucia o turbia",em:"🪣"}],
+  fb:()=>A.agua==="si"?["ok","¡Perfecto!","Una gallina toma casi el doble de agua que de alimento."]:["bad","Muy importante","El agua limpia y siempre disponible es clave. Si faltó o estuvo sucia, la postura baja durante varios días."]},
  {id:"sintomas",type:"multi",q:"¿Notaste alguna de estas señales?",hint:"Puedes marcar varias.",
   opts:[{v:"cascara",t:"Cáscara débil o huevos deformes",em:"🥚"},{v:"tristes",t:"Aves decaídas, tos o estornudos",em:"🤧"},{v:"diarrea",t:"Diarrea o heces raras",em:"💩"},{v:"plumas",t:"Pérdida de plumas",em:"🪶"},{v:"picaje",t:"Se picotean o comen huevos",em:"🐓"},{v:"ninguno",t:"Ninguna señal",em:"✅"}],
   fb:()=>A.sintomas.includes("ninguno")?["ok","¡Buena señal!","Que no haya síntomas descarta muchas enfermedades."]:["warn","Gracias por observar","Estas señales nos ayudan a encontrar el origen. Mira el diagnóstico."]},
@@ -195,22 +209,23 @@ const STEPS=[
 ];
 const real=()=>A.aves>0?A.huevos/A.aves*100:0;
 const faltan=()=>Math.max(0,estandar(A.edad)/100*A.aves-A.huevos);
-
+ 
 let i=-1,phase="ask",view="flow";
 const $=id=>document.getElementById(id);
-
+ 
 function setBar(){const p=i<0?0:i>=STEPS.length?100:(i/STEPS.length)*100;$("bar").style.width=p+"%";$("bar").parentElement.setAttribute("aria-valuenow",Math.round(p))}
 function bottom(cls,btn,dis){$("bottom").className="bottom"+(cls?" "+cls:"");$("go").textContent=btn;$("go").disabled=!!dis}
-
+ 
 function render(){
   if(view==="capture")return renderCapture();
+  if(view==="privacidad")return renderPrivacidad();
   if(view==="done")return renderDone();
   $("bottom").hidden=false;
   setBar();phase="ask";bottom("", "Comprobar",false);
   $("back").style.visibility=i<0?"hidden":"visible";
   const sc=$("screen");sc.classList.remove("pop");void sc.offsetWidth;sc.classList.add("pop");
   if(i<0){
-    sc.innerHTML=`<h1>Postura al Día</h1>${say("¡Hola! Soy Clarita. En unos 2 minutos vamos a revisar cómo ponen tus gallinas y, si producen menos de lo esperado, te ayudo a encontrar por qué.")}
+    sc.innerHTML=`<h1>Postura al Día</h1>${say("¡Hola! Soy Clarita. En 2 minutos vamos a revisar cómo ponen tus gallinas y, si producen menos de lo esperado, te ayudo a encontrar por qué.")}
       <p class="lead">Responde 11 preguntas cortas. Después de cada respuesta te explico algo nuevo.</p>
       ${A._ejemplo?'<p class="note">Las respuestas vienen con un ejemplo de 1000 gallinas. Cámbialas por las tuyas.</p>':'<p class="note">Guardamos tus últimas respuestas para darte información más detallada la próxima vez.</p>'}`;
     bottom("","Empezar");return;
@@ -264,14 +279,14 @@ $("go").addEventListener("click",()=>{
   if(i<0||i>=STEPS.length){i=i<0?0:0;render();return}
   if(phase==="ask")check();else{i++;render()}
 });
-$("back").addEventListener("click",()=>{if(view!=="flow"){view="flow";i=STEPS.length;render();return}if(i>0){i=Math.min(i,STEPS.length)-1;render()}else{i=-1;render()}});
+$("back").addEventListener("click",()=>{if(view==="privacidad"){view="capture";render();return}if(view!=="flow"){view="flow";i=STEPS.length;render();return}if(i>0){i=Math.min(i,STEPS.length)-1;render()}else{i=-1;render()}});
 $("restart").addEventListener("click",()=>{view="flow";i=-1;render()});
-
+ 
 function diagnose(){
   const s=estandar(A.edad),r=real(),d=r-s,c=[],ok=[];
   const add=(k,h,p,todo)=>c.push({k,h,p,todo});
   if(A.edad<18)return{c,ok,pre:true};
-  if(A.agua==="no")add("bad","Falta o mala calidad de agua","Sin agua la gallina deja de comer y de poner.","Limpia bebederos hoy y revisa que nunca falte agua fresca.");else ok.push("El agua está bien.");
+  if(A.agua&&A.agua!=="si")add("bad","Falta o mala calidad de agua","Sin agua limpia la gallina deja de comer y de poner.","Limpia bebederos hoy y revisa que nunca falte agua fresca.");else ok.push("El agua está bien.");
   if(A.alimento!=null){const g=A.alimento*1000/A.aves,o=linea().alim;if(g<o*0.92)add("bad","Consumo de alimento bajo",`Cada gallina come ${int(g)} g y necesita unos ${o} g al día.`,`Sube la ración a unos ${fmt(o*A.aves/1000,0)} kg por día, revisa que el alimento no esté húmedo o con hongos y que haya espacio en comederos.`);else ok.push("La cantidad de alimento es suficiente.")}
   if(A.temp==="mucho")add("bad","Estrés por calor","Con más de 32 °C las gallinas jadean, comen poco y ponen menos.","Abre cortinas, moja el techo en las horas de calor, da agua fresca y sirve el alimento temprano y al atardecer.");
   else if(A.temp==="calor")add("warn","Calor moderado","Entre 28 y 32 °C ya baja el consumo de alimento.","Mejora la ventilación y da el alimento en las horas frescas.");else ok.push("La temperatura es buena.");
@@ -288,7 +303,7 @@ function diagnose(){
   if(A.edad<26&&d<-2)add("warn","Inicio de postura lento","Al inicio, la causa común es poco peso corporal.","Pesa 50 gallinas y compara el promedio con la guía de la línea.");
   return{c:c.sort((a,b)=>(a.k==="bad"?0:1)-(b.k==="bad"?0:1)),ok,d,r,s};
 }
-
+ 
 function result(){
   setBar();$("back").style.visibility="visible";
   const D=diagnose(),sc=$("screen");
@@ -315,15 +330,17 @@ function result(){
   if($("toCapture"))$("toCapture").addEventListener("click",()=>{grabLead();view="capture";render()});
   bottom(st[0]==="ok"?"":"","Hacer otro diagnóstico");
 }
-
+ 
 function grabLead(){
   if($("f-nom"))lead.nombre=$("f-nom").value.trim();
   if($("f-ape"))lead.apellidos=$("f-ape").value.trim();
   if($("f-tel"))lead.telefono=$("f-tel").value.trim();
   if($("f-cor"))lead.correo=$("f-cor").value.trim();
+  if($("f-hp"))lead.website=$("f-hp").value;
 }
 function enviarLead(){
   const d={tipo_formulario:"productor",fecha:new Date().toISOString(),
+    token:FORM_TOKEN, website:lead.website||"", cf_token:cfToken,
     nombre:lead.nombre||"",apellidos:lead.apellidos||"",telefono:lead.telefono||"",correo:lead.correo||"",
     tipo_produccion:lead.tipo||"",linea:linea().nombre,edad:A.edad,aves:A.aves,
     postura:Math.round(real()*10)/10,tabla:estandar(A.edad)};
@@ -341,17 +358,49 @@ function renderCapture(){
     <div class="field"><label for="f-tel">Teléfono o WhatsApp</label><input id="f-tel" type="tel" inputmode="tel" autocomplete="tel" value="${lead.telefono||''}"></div>
     <div class="field"><label for="f-cor">Correo electrónico <span class="privacy">(opcional)</span></label><input id="f-cor" type="email" inputmode="email" autocomplete="email" value="${lead.correo||''}"></div>
     <div class="field"><label>Tipo de producción</label><div class="choices">${tipos.map(([v,t])=>`<button class="choice" type="button" data-v="${v}" aria-pressed="${lead.tipo===v}"><span><b>${t}</b></span></button>`).join("")}</div></div>
+    <input type="text" id="f-hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
+    ${TURNSTILE_SITEKEY?`<div class="cf-turnstile" data-sitekey="${TURNSTILE_SITEKEY}" data-callback="onTurnstile" data-expired-callback="onTurnstileExpire"></div>`:""}
+    <label class="consent"><input type="checkbox" id="f-consent"> Acepto que Bitsac use mis datos para contactarme sobre mi producción, según las <a href="#" id="verPriv">políticas de seguridad de datos</a>.</label>
     <button class="btn" type="button" id="send" disabled>Enviar mis datos</button>
     <button class="skip" type="button" id="backRes">Volver al resultado</button>
-    <p class="privacy">Usaremos tus datos solo para contactarte sobre tu producción. No los compartimos con terceros.</p>
+    <p class="privacy">Tratamos tus datos solo para contactarte sobre tu producción. No los compartimos con terceros. Ley 29733.</p>
   </div>`;
-  const nom=$("f-nom"),tel=$("f-tel");
-  const chk=()=>{$("send").disabled=!(nom.value.trim()&&tel.value.trim()&&lead.tipo)};
+  const nom=$("f-nom"),tel=$("f-tel"),consent=$("f-consent");
+  const chk=()=>{$("send").disabled=!(nom.value.trim()&&tel.value.trim()&&lead.tipo&&consent.checked&&(!TURNSTILE_SITEKEY||cfToken))};
+  window._recheck=chk;
+  consent.addEventListener("change",chk);
   [nom,tel,$("f-ape"),$("f-cor")].forEach(el=>el.addEventListener("input",chk));
   sc.querySelectorAll(".choice").forEach(b=>b.addEventListener("click",()=>{sc.querySelectorAll(".choice").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");lead.tipo=b.dataset.v;chk()}));
   chk();
+  $("verPriv").addEventListener("click",ev=>{ev.preventDefault();grabLead();view="privacidad";render()});
   $("backRes").addEventListener("click",()=>{grabLead();view="flow";i=STEPS.length;render()});
   $("send").addEventListener("click",()=>{grabLead();enviarLead();view="done";render()});
+}
+function renderPrivacidad(){
+  $("bottom").hidden=true;$("back").style.visibility="visible";setBar();
+  const sc=$("screen");sc.classList.remove("pop");void sc.offsetWidth;sc.classList.add("pop");
+  sc.innerHTML=`<h2>Políticas de seguridad de datos</h2>
+  <div class="policy">
+    <p class="note">Vigente desde el 10 de noviembre de 2026 · App Clarita, de Bitsac. Borrador de referencia: completar los datos entre corchetes y revisar con un asesor legal.</p>
+    <h3>1. Responsable</h3>
+    <p>El responsable del tratamiento de datos es BioIngeniería S.A.C. (Bitsac), con domicilio en Tarapoto, San Martín, Perú.</p>
+    <h3>2. Qué datos recolectamos</h3>
+    <p>Solo lo que ingresas al final del diagnóstico: nombre y apellidos, teléfono o WhatsApp, correo (opcional), tipo de producción y los datos de tu lote (línea, edad, aves, postura y tabla). No recolectamos datos sensibles, ubicación exacta ni información financiera.</p>
+    <h3>3. Para qué los usamos</h3>
+    <p>Únicamente para que un técnico de Bitsac te contacte y te dé asesoría sobre tu producción. Para ningún otro fin.</p>
+    <h3>4. Consentimiento</h3>
+    <p>Tratamos tus datos con tu consentimiento, que otorgas al marcar la casilla antes de enviar. Nos regimos por la Ley N.° 29733, Ley de Protección de Datos Personales del Perú, y su reglamento.</p>
+    <h3>5. Con quién se comparten</h3>
+    <p>No vendemos ni compartimos tus datos con terceros con fines comerciales. Se almacenan en Google Sheets, que actúa como encargado del tratamiento. El acceso está restringido a personal autorizado de Bitsac.</p>
+    <h3>6. Cuánto tiempo los guardamos</h3>
+    <p>Mientras exista relación de contacto o asesoría, y como máximo [12 meses] desde el último contacto, salvo que pidas su eliminación antes.</p>
+    <h3>7. Tus derechos</h3>
+    <p>Puedes pedir acceso, rectificación, cancelación u oposición (derechos ARCO) sobre tus datos. Para ejercerlos, comunícate con Bitsac por el mismo medio por el que te contactamos, indicando tu nombre y el derecho que deseas ejercer.</p>
+    <h3>8. Seguridad</h3>
+    <p>Transmisión cifrada (HTTPS), acceso restringido a la base de datos y verificación en dos pasos en las cuentas que la administran.</p>
+  </div>
+  <button class="btn alt" type="button" id="privBack" style="margin-top:10px">Volver</button>`;
+  $("privBack").addEventListener("click",()=>{view="capture";render()});
 }
 function renderDone(){
   $("bottom").hidden=true;$("back").style.visibility="visible";setBar();
@@ -361,7 +410,7 @@ function renderDone(){
 }
 render();
 </script>
-
+ 
 <script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
 </body>
 </html>
